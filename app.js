@@ -504,15 +504,29 @@
 
     const PRIORITY_ORDER = { 'Wysoki': 3, 'Średni': 2, 'Niski': 1 };
 
+    const EXCHANGE_RATES = {
+        'EUR': 1,
+        'SEK': 0.088,
+        'PLN': 0.233,
+        'GBP': 1.17,
+        'USD': 0.92,
+    };
+
     function sortData(data, sortKey, sortDir) {
         const col = SORT_COLUMNS.find(c => c.key === sortKey);
         if (!col) return data;
+
+        const isCurrency = ['spend', 'sales', 'cpc', 'suggestedBid'].includes(sortKey);
 
         return [...data].sort((a, b) => {
             let valA, valB;
             if (col.type === 'number') {
                 valA = a[sortKey] || 0;
                 valB = b[sortKey] || 0;
+                if (isCurrency) {
+                    valA *= (EXCHANGE_RATES[a.currency] || 1);
+                    valB *= (EXCHANGE_RATES[b.currency] || 1);
+                }
             } else if (col.type === 'priority') {
                 valA = PRIORITY_ORDER[a[sortKey]] || 0;
                 valB = PRIORITY_ORDER[b[sortKey]] || 0;
@@ -612,13 +626,13 @@
 
             if (type !== 'bids' && type !== 'autoTargets' && type !== 'wastedWords') html += `<td>${row.impressions.toLocaleString('pl-PL')}</td>`;
             html += `<td>${row.clicks.toLocaleString('pl-PL')}</td>`;
-            html += `<td>${formatCurrency(row.spend, row.currency)}</td>`;
-            html += `<td>${formatCurrency(row.sales, row.currency)}</td>`;
+            html += `<td>${formatCurrency(row.spend, row.currency, true)}</td>`;
+            html += `<td>${formatCurrency(row.sales, row.currency, true)}</td>`;
             
             if (type === 'bids' || type === 'autoTargets') {
                 html += `<td>${row.currentAcos > 0 ? row.currentAcos.toFixed(1) + '%' : '—'}</td>`;
-                html += `<td>${formatCurrency(row.cpc, row.currency)}</td>`;
-                html += `<td><strong>${formatCurrency(row.suggestedBid, row.currency)}</strong></td>`;
+                html += `<td>${formatCurrency(row.cpc, row.currency, true)}</td>`;
+                html += `<td><strong>${formatCurrency(row.suggestedBid, row.currency, true)}</strong></td>`;
                 const changeColor = row.changePct > 20 ? 'text-green' : row.changePct < -20 ? 'text-red' : '';
                 const changeP = row.changePct > 0 ? '+' + row.changePct.toFixed(0) : row.changePct.toFixed(0);
                 html += `<td class="${changeColor}">${changeP}%</td>`;
@@ -973,12 +987,20 @@
         if (el) el.textContent = value;
     }
 
-    function formatCurrency(val, currency) {
-        return new Intl.NumberFormat('pl-PL', {
+    function formatCurrency(val, currency, showExchange = false) {
+        const base = new Intl.NumberFormat('pl-PL', {
             style: 'currency',
             currency: currency || 'EUR',
             minimumFractionDigits: 2,
         }).format(val);
+        
+        if (showExchange && currency && currency !== 'EUR' && EXCHANGE_RATES[currency]) {
+            const eurVal = val * EXCHANGE_RATES[currency];
+            const eurStr = new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'EUR' }).format(eurVal);
+            return `${base} <span style="font-size: 0.75em; color: var(--text-muted); display: block; margin-top: 2px;">≈ ${eurStr}</span>`;
+        }
+        
+        return base;
     }
 
     function escHTML(str) {
