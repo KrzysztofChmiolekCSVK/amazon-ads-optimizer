@@ -576,8 +576,7 @@
         html += '<th class="th-nosort">Akcja</th>';
         html += '</tr></thead><tbody>';
 
-        const maxRows = 100;
-        sortedData.slice(0, maxRows).forEach((row, i) => {
+        sortedData.forEach((row, i) => {
             const priorityClass = row.priority === 'Wysoki' ? 'badge-danger' :
                                   row.priority === 'Średni' ? 'badge-warning' : 'badge-info';
 
@@ -634,9 +633,6 @@
         });
 
         html += '</tbody></table>';
-        if (data.length > maxRows) {
-            html += `<div style="padding:12px 16px;color:var(--text-muted);font-size:0.82rem;">Pokazano ${maxRows} z ${data.length} wyników. Eksportuj CSV, żeby zobaczyć wszystkie.</div>`;
-        }
         container.innerHTML = html;
 
         // Attach Done buttons logic
