@@ -33,7 +33,17 @@
     const campaignFilter = document.getElementById('campaign-filter');
     const globalSearchInput = document.getElementById('global-search');
     const loadingStatus = document.getElementById('loading-status');
-    const doneRowIds = new Set();
+    let doneRowIds = new Set();
+    try {
+        const stored = localStorage.getItem('amazon_ads_optimizer_done_rows');
+        if (stored) doneRowIds = new Set(JSON.parse(stored));
+    } catch(e) { console.warn('Local storage init error', e); }
+
+    function saveDoneRows() {
+        try {
+            localStorage.setItem('amazon_ads_optimizer_done_rows', JSON.stringify(Array.from(doneRowIds)));
+        } catch(e) { console.warn('Local storage save error', e); }
+    }
 
     // Country → Amazon domain mapping
     const COUNTRY_DOMAINS = {
@@ -253,7 +263,6 @@
         parsedDataMap = { searchTerms: [], targeting: [], placements: [], sqp: [], hourly: [] };
         analysisResults = null;
         fileInput.value = '';
-        doneRowIds.clear();
         destroyCharts();
         resetFilters();
         showScreen('upload');
@@ -667,6 +676,7 @@
                     doneRowIds.add(rID);
                     tr.classList.add('row-done');
                 }
+                saveDoneRows();
             });
         });
 
