@@ -46,7 +46,6 @@
         'Poland': 'amazon.pl',
         'Sweden': 'amazon.se',
         'Belgium': 'amazon.com.be',
-        'United States': 'amazon.com',
     };
 
     // Country → Flag emoji mapping
@@ -60,7 +59,6 @@
         'Poland': '🇵🇱',
         'Sweden': '🇸🇪',
         'Belgium': '🇧🇪',
-        'United States': '🇺🇸',
     };
     const themeToggleUpload = document.getElementById('theme-toggle-upload');
     const themeToggleDash = document.getElementById('theme-toggle-dash');
