@@ -603,7 +603,7 @@
             const priorityClass = row.priority === 'Wysoki' ? 'badge-danger' :
                                   row.priority === 'Średni' ? 'badge-warning' : 'badge-info';
 
-            const rowId = `${type}_${row.campaign}_${row.searchTerm}`;
+            const rowId = `${type}_${row.campaign}_${row.searchTerm}`.toLowerCase();
             const isDone = doneRowIds.has(rowId);
             const doneClass = isDone ? 'row-done' : '';
 
