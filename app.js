@@ -505,6 +505,7 @@
         { key: 'impressions', label: 'Impressions', type: 'number' },
         { key: 'clicks', label: 'Clicks', type: 'number' },
         { key: 'spend', label: 'Spend', type: 'number' },
+        { key: 'cpc', label: 'CPC', type: 'number' },
         { key: 'sales', label: 'Sales', type: 'number' },
         { key: 'acos', label: 'ACoS', type: 'number' },
         { key: 'currentAcos', label: 'Aktualny ACoS', type: 'number', specificTo: ['bids', 'autoTargets'] },
@@ -536,6 +537,8 @@
             if (col.type === 'number') {
                 valA = a[sortKey] || 0;
                 valB = b[sortKey] || 0;
+                
+                // If sorting by a monetary column, normalize to EUR for fair comparison
                 if (isCurrency) {
                     valA *= (EXCHANGE_RATES[a.currency] || 1);
                     valB *= (EXCHANGE_RATES[b.currency] || 1);
@@ -649,11 +652,11 @@
             if (type !== 'bids' && type !== 'autoTargets' && type !== 'wastedWords') html += `<td>${row.impressions.toLocaleString('pl-PL')}</td>`;
             html += `<td>${row.clicks.toLocaleString('pl-PL')}</td>`;
             html += `<td>${formatCurrency(row.spend, row.currency, true)}</td>`;
+            html += `<td>${formatCurrency(row.cpc, row.currency, true)}</td>`;
             html += `<td>${formatCurrency(row.sales, row.currency, true)}</td>`;
             
             if (type === 'bids' || type === 'autoTargets') {
                 html += `<td>${row.currentAcos > 0 ? row.currentAcos.toFixed(1) + '%' : '—'}</td>`;
-                html += `<td>${formatCurrency(row.cpc, row.currency, true)}</td>`;
                 html += `<td><strong>${formatCurrency(row.suggestedBid, row.currency, true)}</strong></td>`;
                 const changeColor = row.changePct > 20 ? 'text-green' : row.changePct < -20 ? 'text-red' : '';
                 const changeP = row.changePct > 0 ? '+' + row.changePct.toFixed(0) : row.changePct.toFixed(0);
