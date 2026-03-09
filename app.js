@@ -36,7 +36,11 @@
     let doneRowIds = new Set();
     try {
         const stored = localStorage.getItem('amazon_ads_optimizer_done_rows');
-        if (stored) doneRowIds = new Set(JSON.parse(stored));
+        if (stored) {
+            const rawArr = JSON.parse(stored);
+            // Normalize existing IDs to lowercase for reliability
+            doneRowIds = new Set(rawArr.map(id => String(id).toLowerCase()));
+        }
     } catch(e) { console.warn('Local storage init error', e); }
 
     function saveDoneRows() {
@@ -603,7 +607,10 @@
             const priorityClass = row.priority === 'Wysoki' ? 'badge-danger' :
                                   row.priority === 'Średni' ? 'badge-warning' : 'badge-info';
 
-            const rowId = `${type}_${row.campaign}_${row.searchTerm}`.toLowerCase();
+            const cleanSearch = (row.searchTerm || '').trim();
+            const cleanCamp = (row.campaign || '').trim();
+            const cleanAdG = (row.adGroup || '').trim();
+            const rowId = `${type}_${cleanCamp}_${cleanAdG}_${cleanSearch}`.toLowerCase();
             const isDone = doneRowIds.has(rowId);
             const doneClass = isDone ? 'row-done' : '';
 
