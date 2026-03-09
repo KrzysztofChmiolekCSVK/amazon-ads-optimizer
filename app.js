@@ -602,7 +602,9 @@
             html += `<th class="${cls}" data-sort-key="${col.key}" data-table-type="${type}">${col.label}${arrow}</th>`;
         });
 
-        html += '<th class="th-nosort" style="width: 40px; text-align: center;">✓</th>';
+        html += `<th class="th-nosort" style="width: 40px; text-align: center;">
+            <button class="btn-bulk-done" data-table-type="${type}" title="Zaznacz/Odznacz wszystkie widoczne" style="background:none; border:none; cursor:pointer; padding:0; font-size:1.1em; color:inherit;">✓</button>
+        </th>`;
         html += '<th class="th-nosort">Akcja</th>';
         html += '</tr></thead><tbody>';
 
@@ -687,6 +689,48 @@
                     tr.classList.add('row-done');
                 }
                 saveDoneRows();
+            });
+        });
+        
+        // Attach Bulk Done logic
+        container.querySelectorAll('.btn-bulk-done').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tType = btn.dataset.tableType;
+                // We use the already filtered and sorted data used for rendering
+                const allVisibleIds = sortedData.map(row => {
+                    const cSearch = (row.searchTerm || '').trim();
+                    const cCamp = (row.campaign || '').trim();
+                    const cAdG = (row.adGroup || '').trim();
+                    return `${tType}_${cCamp}_${cAdG}_${cSearch}`.toLowerCase();
+                });
+
+                const allDone = allVisibleIds.every(id => doneRowIds.has(id));
+                
+                allVisibleIds.forEach(id => {
+                    if (allDone) {
+                        doneRowIds.delete(id);
+                    } else {
+                        doneRowIds.add(id);
+                    }
+                });
+
+                saveDoneRows();
+                // Re-render only this table to show changes
+                const dataMap = {
+                    'wasted': analysisResults?.wastedSpend,
+                    'wastedAsins': analysisResults?.wastedAsins,
+                    'wastedWords': analysisResults?.wastedWords,
+                    'bids': analysisResults?.bids,
+                    'autoTargets': analysisResults?.autoTargets,
+                    'placements': analysisResults?.placements,
+                    'winners': analysisResults?.winners,
+                    'skag': analysisResults?.skag,
+                    'harvest': analysisResults?.harvest,
+                    'harvestAsins': analysisResults?.harvestAsins,
+                    'sqp': analysisResults?.sqpBoost,
+                    'high-acos': analysisResults?.highAcos,
+                };
+                renderTable(containerId, dataMap[tType], tType);
             });
         });
 
