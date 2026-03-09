@@ -751,7 +751,6 @@ th {
     cursor: pointer;
     user-select: none;
     transition: var(--transition);
-    position: relative;
 }
 .th-sort:hover {
     color: var(--text-primary);
