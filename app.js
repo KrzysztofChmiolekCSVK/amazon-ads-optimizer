@@ -1020,31 +1020,39 @@
             
             let headers;
             if (isWastedWords) {
-                headers = ['N-Gram (Złe Słowo)', 'Kontekst (Przykłady)', 'Kampanie', 'Clicks', 'Spend', 'Sales', 'ACoS', 'Orders', 'Priority', 'Action'];
+                headers = ['N-Gram (Zle Slowo)', 'Kontekst (Przyklady)', 'Kampanie', 'Clicks', 'Spend', 'CPC', 'Sales', 'ACoS', 'Orders', 'Priority', 'Action'];
             } else if (isSqp) {
-                headers = ['Search Term', 'Campaign', 'Ad Group', 'SQP Volume', 'SQP Brand Share %', 'ACoS', 'Sales', 'Orders', 'Spend', 'Priority', 'Action'];
+                headers = ['Search Term', 'Campaign', 'Ad Group', 'SQP Volume', 'SQP Brand Share %', 'ACoS', 'Sales', 'Orders', 'Spend', 'CPC', 'Priority', 'Action'];
             } else {
-                headers = ['Search Term', 'Campaign', 'Ad Group', 'Match Type', 'Impressions', 'Clicks', 'Spend', 'Sales', 'ACoS', 'Orders', 'Priority', 'Action'];
+                const isWinnerType = ['winners', 'skag', 'harvest', 'harvestAsins'].includes(type);
+                headers = ['Search Term', 'Campaign', 'Ad Group', 'Match Type', 'Impressions', 'Clicks', 'Spend', 'CPC', 'Sales', 'ACoS', 'Orders', 'Priority', 'Action'];
+                if (isWinnerType) headers.push('Nowy Bid (+0.10)');
             }
             
             const rows = data.map(r => {
                 const acosVal = r.acos === 999 ? '>999%' : r.acos.toFixed(1) + '%';
+                const cpcVal = r.cpc ? r.cpc.toFixed(2) : '0.00';
                 if (isWastedWords) {
                     return [
                         r.searchTerm, r.ngramContext, r.campaign,
-                        r.clicks, r.spend, r.sales, acosVal, r.orders, r.priority, r.action
+                        r.clicks, r.spend, cpcVal, r.sales, acosVal, r.orders, r.priority, r.action
                     ];
                 } else if (isSqp) {
                     return [
                         r.searchTerm, r.campaign, r.adGroup, r.sqpVolume, r.sqpBrandShare + '%', 
-                        acosVal, r.sales, r.orders, r.spend, r.priority, r.action
+                        acosVal, r.sales, r.orders, r.spend, cpcVal, r.priority, r.action
                     ];
                 } else {
-                    return [
+                    const rowArr = [
                         r.searchTerm, r.campaign, r.adGroup, r.matchType,
-                        r.impressions, r.clicks, r.spend, r.sales,
+                        r.impressions, r.clicks, r.spend, cpcVal, r.sales,
                         acosVal, r.orders, r.priority, r.action
                     ];
+                    if (['winners', 'skag', 'harvest', 'harvestAsins'].includes(type)) {
+                        const newBid = (r.cpc || 0) + 0.10;
+                        rowArr.push(newBid.toFixed(2));
+                    }
+                    return rowArr;
                 }
             });
 
