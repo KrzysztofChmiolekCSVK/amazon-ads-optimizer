@@ -286,7 +286,8 @@ const AnalysisEngine = {
 
             // 3. Harvest: auto/broad/phrase/competitor campaign terms with conversions
             const isHarvestSource = /auto|automatic|automatyczna|\baut\b|broad|szeroki|\bbrd\b|phrase|\bphr\b|konkurencja|\bkon\b|\bcat\b|category/i.test(row.campaign + ' ' + (row.adGroup || '') + ' ' + (row.matchType || ''));
-            if (isHarvestSource && row.orders >= 1 && row.sales > 0) {
+            // Harvest only if it has orders and ACoS is not extremely high (max 1.5x target)
+            if (isHarvestSource && row.orders >= 1 && row.sales > 0 && row.acos <= targetAcos * 1.5) {
                 const priority = row.orders >= 3 ? 'Wysoki' : 'Średni';
                 const alreadyExists = existingExactTargets.has(lowerTerm) || 
                                       (isAsin && existingExactTargets.has(`asin="${lowerTerm.toUpperCase()}"`));
