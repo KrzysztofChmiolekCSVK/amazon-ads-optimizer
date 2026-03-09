@@ -617,8 +617,14 @@
                 campaignHTML = row.campaign.split(', ').map(c => `<div style="margin-bottom: 4px;">&bull; ${escHTML(c)}${btnCopyHTML(c.replace(/\[.*?\]\s*/, ''))}</div>`).join('');
             } else {
                 campaignHTML += btnCopyHTML(row.campaign.replace(/\[.*?\]\s*/, '')); // Strip country tags when copying
+                
+                // Add Ad Group display if available
+                if (row.adGroup) {
+                    campaignHTML += `<div style="font-size: 0.8em; color: var(--text-muted); margin-top: 4px;">↳ ${escHTML(row.adGroup)}${btnCopyHTML(row.adGroup)}</div>`;
+                }
             }
-            html += `<td class="cell-campaign" title="${escHTML(row.campaign)}">${campaignHTML}</td>`;
+            const fullTitle = row.adGroup ? `${row.campaign} - ${row.adGroup}` : row.campaign;
+            html += `<td class="cell-campaign" title="${escHTML(fullTitle)}">${campaignHTML}</td>`;
             if (showCountry) {
                 const flag = COUNTRY_FLAGS[row.country] || '';
                 html += `<td class="cell-country">${flag} ${escHTML(row.country || '')}</td>`;
