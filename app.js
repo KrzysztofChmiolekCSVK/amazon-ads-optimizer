@@ -956,8 +956,20 @@
                 'sqp': analysisResults?.sqpBoost,
                 'high-acos': analysisResults?.highAcos,
             };
-            const data = dataMap[type];
+            let data = dataMap[type];
             if (!data || data.length === 0) return;
+
+            // Apply global search filter to exported data as well
+            if (globalSearchQuery) {
+                const q = globalSearchQuery.toLowerCase();
+                data = data.filter(r => 
+                    (r.searchTerm && r.searchTerm.toLowerCase().includes(q)) ||
+                    (r.campaign && r.campaign.toLowerCase().includes(q)) ||
+                    (r.ngramContext && r.ngramContext.toLowerCase().includes(q)) ||
+                    (r.adGroup && r.adGroup.toLowerCase().includes(q))
+                );
+            }
+            if (data.length === 0) return;
 
             const isWastedWords = type === 'wastedWords';
             const isSqp = type === 'sqp';
