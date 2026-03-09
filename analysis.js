@@ -284,9 +284,9 @@ const AnalysisEngine = {
                 }
             }
 
-            // 3. Harvest: auto/broad campaign terms with conversions
-            const isAuto = /auto|automatic|automatyczna|broad|szeroki/i.test(row.campaign + ' ' + row.matchType);
-            if (isAuto && row.orders >= 1 && row.sales > 0) {
+            // 3. Harvest: auto/broad/phrase/competitor campaign terms with conversions
+            const isHarvestSource = /auto|automatic|automatyczna|\baut\b|broad|szeroki|\bbrd\b|phrase|\bphr\b|konkurencja|\bkon\b|\bcat\b|category/i.test(row.campaign + ' ' + (row.adGroup || '') + ' ' + (row.matchType || ''));
+            if (isHarvestSource && row.orders >= 1 && row.sales > 0) {
                 const priority = row.orders >= 3 ? 'Wysoki' : 'Średni';
                 const alreadyExists = existingExactTargets.has(lowerTerm) || 
                                       (isAsin && existingExactTargets.has(`asin="${lowerTerm.toUpperCase()}"`));
