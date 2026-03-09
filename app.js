@@ -419,20 +419,7 @@
         setText('kpi-wasted-spend', formatCurrency(r.kpi.wastedSpend));
         setText('kpi-roas', r.kpi.roas.toFixed(2) + 'x');
 
-        // Render Deltas
-        if (r.kpi.deltas) {
-            const setDelta = (id, val, invertedGood = false) => {
-                const el = document.getElementById(id);
-                if (!el || val === undefined || isNaN(val)) return;
-                if (Math.abs(val) < 0.05) { el.innerHTML = ''; return; }
-                const isGood = invertedGood ? val < 0 : val > 0;
-                const formatted = id.includes('acos') ? `${val > 0 ? '+' : ''}${val.toFixed(1)}%` : `${val > 0 ? '+' : ''}${formatCurrency(val)}`;
-                el.innerHTML = ` <span style="font-size:0.75rem; color: ${isGood ? 'var(--accent-success)' : 'var(--accent-danger)'}">${formatted}</span>`;
-            };
-            setDelta('delta-total-spend', r.kpi.deltas.totalSpend);
-            setDelta('delta-avg-acos', r.kpi.deltas.avgAcos, true);
-            setDelta('delta-wasted-spend', r.kpi.deltas.wastedSpend, true);
-        }
+
 
         // Tab counts
         setText('count-wasted', r.wastedSpend.length);
