@@ -1,0 +1,5 @@
+raporty amazon/
+node_modules/
+.DS_Store
+.wrangler/
+.gemini/

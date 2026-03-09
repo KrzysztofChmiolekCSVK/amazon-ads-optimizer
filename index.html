@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon Ads Optimizer — Optymalizacja Reklam</title>
+    <meta name="description" content="Analizuj raporty Search Terms z Amazon Ads i otrzymuj konkretne rekomendacje optymalizacji kampanii reklamowych.">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- HERO / UPLOAD SCREEN -->
+    <div id="app-upload" class="screen active">
+        <div class="hero-bg">
+            <div class="hero-orb hero-orb-1"></div>
+            <div class="hero-orb hero-orb-2"></div>
+            <div class="hero-orb hero-orb-3"></div>
+        </div>
+        <nav class="navbar">
+            <div class="nav-brand">
+                <span class="nav-icon">🚀</span>
+                <span class="nav-title">Amazon Ads Optimizer</span>
+            </div>
+            <div class="nav-actions" style="display: flex; gap: 14px; align-items: center;">
+                <button id="theme-toggle-upload" class="theme-toggle" title="Przełącz motyw">🌙</button>
+                <div class="nav-badge">v1.0</div>
+            </div>
+        </nav>
+        <main class="hero-content">
+            <h1 class="hero-heading">
+                Optymalizuj swoje <span class="gradient-text">reklamy Amazon</span> w kilka sekund
+            </h1>
+            <p class="hero-subtitle">Wrzuć raport Search Terms z Amazon Ads, a my przeanalizujemy go i podpowiemy konkretne akcje do wykonania.</p>
+            
+            <div id="upload-zone" class="upload-zone">
+                <div class="upload-icon">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                </div>
+                <p class="upload-title">Wybierz 1 lub więcej raportów</p>
+                <p class="upload-hint">Upuść tu Search Terms, Targeting, Placement lub SQP report (Brand Analytics)</p>
+                <input type="file" id="file-input" accept=".csv,.tsv,.txt,.xlsx,.xls" multiple hidden>
+            </div>
+
+            <div class="upload-info">
+                <div class="info-card">
+                    <span class="info-icon">📊</span>
+                    <div>
+                        <strong>Kompleksowa Analiza</strong>
+                        <p>Połącz raporty z kampanii z raportem SQP z Brand Analytics</p>
+                    </div>
+                </div>
+                <div class="info-card">
+                    <span class="info-icon">🔒</span>
+                    <div>
+                        <strong>100% Prywatność</strong>
+                        <p>Dane nie opuszczają Twojej przeglądarki</p>
+                    </div>
+                </div>
+                <div class="info-card">
+                    <span class="info-icon">⚡</span>
+                    <div>
+                        <strong>Błyskawiczna Analiza</strong>
+                        <p>Wyniki w kilka sekund</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Demo data button -->
+            <button id="demo-btn" class="btn-demo">
+                <span>🧪</span> Wypróbuj z przykładowymi danymi
+            </button>
+        </main>
+    </div>
+
+    <!-- LOADING SCREEN -->
+    <div id="app-loading" class="screen">
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">Analizuję Twój raport...</p>
+            <p class="loading-subtext" id="loading-status">Parsowanie danych</p>
+        </div>
+    </div>
+
+    <!-- DASHBOARD SCREEN -->
+    <div id="app-dashboard" class="screen">
+        <nav class="navbar navbar-dash">
+            <div class="nav-brand">
+                <span class="nav-icon">🚀</span>
+                <span class="nav-title">Amazon Ads Optimizer</span>
+            </div>
+            <div class="nav-actions" style="display: flex; gap: 12px; align-items: center;">
+                <button id="theme-toggle-dash" class="theme-toggle" title="Przełącz motyw">🌙</button>
+                <button id="new-report-btn" class="btn-outline">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+                    Nowy raport
+                </button>
+            </div>
+        </nav>
+
+        <!-- Settings Bar -->
+        <div class="settings-bar">
+            <div class="settings-inner">
+                <div class="setting-group">
+                    <label for="country-filter">🌍 Kraj</label>
+                    <select id="country-filter" class="setting-select">
+                        <option value="all">Wszystkie kraje</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label for="campaign-filter">📢 Kampania</label>
+                    <select id="campaign-filter" class="setting-select">
+                        <option value="all">Wszystkie kampanie</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <label for="target-acos">🎯 Docelowy ACoS (%)</label>
+                    <input type="number" id="target-acos" value="20" min="1" max="100" step="1">
+                </div>
+                <div class="setting-group">
+                    <label for="min-spend">💸 Min. Spend (wasted spend)</label>
+                    <input type="number" id="min-spend" value="15" min="1" max="500" step="1">
+                </div>
+                <div class="setting-group">
+                    <label for="min-clicks">🖱️ Min. kliknięć (wasted spend)</label>
+                    <input type="number" id="min-clicks" value="10" min="1" max="100" step="1">
+                </div>
+                <div class="setting-group">
+                    <label for="min-orders">🏆 Min. zamówień (winning terms)</label>
+                    <input type="number" id="min-orders" value="2" min="1" max="50" step="1">
+                </div>
+                <button id="reanalyze-btn" class="btn-primary btn-sm">🔄 Przelicz</button>
+            </div>
+        </div>
+
+        <!-- KPI Cards -->
+        <section class="kpi-section">
+            <div class="kpi-grid">
+                <div class="kpi-card">
+                    <div class="kpi-icon kpi-spend">💰</div>
+                    <div class="kpi-data">
+                        <span class="kpi-value" id="kpi-total-spend">—</span>
+                        <span class="kpi-label">Łączny Spend <span class="kpi-delta" id="delta-total-spend"></span></span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon kpi-sales">📈</div>
+                    <div class="kpi-data">
+                        <span class="kpi-value" id="kpi-total-sales">—</span>
+                        <span class="kpi-label">Łączna Sprzedaż</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon kpi-acos">🎯</div>
+                    <div class="kpi-data">
+                        <span class="kpi-value" id="kpi-avg-acos">—</span>
+                        <span class="kpi-label">Średni ACoS <span class="kpi-delta" id="delta-avg-acos"></span></span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon kpi-terms">🔍</div>
+                    <div class="kpi-data">
+                        <span class="kpi-value" id="kpi-total-terms">—</span>
+                        <span class="kpi-label">Search Terms</span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon kpi-wasted">🗑️</div>
+                    <div class="kpi-data">
+                        <span class="kpi-value" id="kpi-wasted-spend">—</span>
+                        <span class="kpi-label">Wasted Spend <span class="kpi-delta" id="delta-wasted-spend"></span></span>
+                    </div>
+                </div>
+                <div class="kpi-card">
+                    <div class="kpi-icon kpi-roas">💎</div>
+                    <div class="kpi-data">
+                        <span class="kpi-value" id="kpi-roas">—</span>
+                        <span class="kpi-label">ROAS</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Recommendations Tabs and Search -->
+        <section class="recommendations-section">
+            <div class="table-actions-bar">
+                <div class="search-box">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="global-search" placeholder="Szukaj termu, ASINu, kampanii...">
+                </div>
+            </div>
+
+            <div class="tabs">
+                <button class="tab" data-tab="charts">📊 Wykresy</button>
+                <button class="tab" data-tab="dayparting">⏰ Day-parting <span class="tab-count" id="count-dayparting">0</span></button>
+                <button class="tab active" data-tab="wasted">🗑️ Wasted Spend <span class="tab-count" id="count-wasted">0</span></button>
+                <button class="tab" data-tab="wasted-asins">🎯 Złe ASINy <span class="tab-count" id="count-wasted-asins">0</span></button>
+                <button class="tab" data-tab="wasted-words">🔤 Złe Słowa (N-Grams) <span class="tab-count" id="count-wasted-words">0</span></button>
+                <button class="tab" data-tab="bids">💡 Sugerowane Bidy <span class="tab-count" id="count-bids">0</span></button>
+                <button class="tab" data-tab="auto-targets">🤖 Optymalizacja AUTO <span class="tab-count" id="count-auto">0</span></button>
+                <button class="tab" data-tab="placements">📍 Miejsca wyświetlania <span class="tab-count" id="count-placements">0</span></button>
+                <button class="tab" data-tab="winners">🏆 Winning Terms <span class="tab-count" id="count-winners">0</span></button>
+                <button class="tab" data-tab="skag">💎 Złote Perełki (SKAG) <span class="tab-count" id="count-skag">0</span></button>
+                <button class="tab" data-tab="harvest">🔄 Do Harvesting <span class="tab-count" id="count-harvest">0</span></button>
+                <button class="tab" data-tab="harvest-asins">📥 Dobre ASINy <span class="tab-count" id="count-harvest-asins">0</span></button>
+                <button class="tab" data-tab="sqp">📈 SQP Boost <span class="tab-count" id="count-sqp">0</span></button>
+                <button class="tab" data-tab="high-acos">📉 Wysoki ACoS <span class="tab-count" id="count-high-acos">0</span></button>
+            </div>
+
+            <div class="tab-content" id="tab-charts">
+                <div class="rec-header">
+                    <div>
+                        <h3>📊 Wykresy i Podsumowanie (Konto)</h3>
+                        <p class="rec-desc">Graficzny rozkład wszystkich Twoich wydatków oraz zestawienia Top Performerów.</p>
+                    </div>
+                </div>
+                <div class="charts-grid" style="padding-top: 15px;">
+                    <div class="chart-card">
+                        <h3 class="chart-title">📊 Rozkład Wydatków vs Sprzedaż (Top 10 Termów)</h3>
+                        <canvas id="chart-spend-vs-sales"></canvas>
+                    </div>
+                    <div class="chart-card">
+                        <h3 class="chart-title">⚖️ Wydajność Budżetu (Konwersja vs Brak)</h3>
+                        <canvas id="chart-acos-distribution"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content" id="tab-dayparting">
+                <div class="rec-header">
+                    <div>
+                        <h3>⏰ Day-parting (Analiza Godzinowa z 24h)</h3>
+                        <p class="rec-desc">Zobacz o których godzinach Twoje kampanie przepalają budżet, a kiedy generują najtańszą sprzedaż.</p>
+                    </div>
+                </div>
+                <div class="charts-grid" style="padding-top: 15px;">
+                    <div class="chart-card" style="grid-column: span 2; height: 350px;">
+                        <h3 class="chart-title">ACOS vs CLICKS w ujęciu godzinowym</h3>
+                        <canvas id="chart-dayparting"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-content active" id="tab-wasted">
+                <div class="rec-header">
+                    <div>
+                        <h3>🗑️ Wasted Spend (Słowa) — Kandydaci na Negative Keywords</h3>
+                        <p class="rec-desc">Słowa z wydatkami ale bez sprzedaży. Dodaj je jako negative keywords (Phrase).</p>
+                    </div>
+                    <button class="btn-export" data-export="wasted">📥 Eksportuj CSV</button>
+                </div>
+                <div class="table-wrap" id="table-wasted"></div>
+            </div>
+
+            <div class="tab-content" id="tab-wasted-asins">
+                <div class="rec-header">
+                    <div>
+                        <h3>🎯 Product Targeting (Wasted) — Złe ASINy konkurencji</h3>
+                        <p class="rec-desc">Twoja kampania Auto niefortunnie wyświetla się na tych produktach. Zablokuj je używając <b>Negative Product Targeting (Exact)</b>, a nie Negative Phrase!</p>
+                    </div>
+                    <button class="btn-export" data-export="wastedAsins">📥 Eksportuj CSV</button>
+                </div>
+                <div class="table-wrap" id="table-wasted-asins"></div>
+            </div>
+
+            <div class="tab-content" id="tab-wasted-words">
+                <div class="rec-header">
+                    <div>
+                        <h3>🔤 Złe Słowa (Analiza N-Gram) — Kandydaci na Negative Phrase</h3>
+                        <p class="rec-desc">Pojedyncze słowa, które przewijają się w wielu zapytaniach Klientów i generują koszty, ale nigdy nie kończą się sprzedażą.</p>
+                    </div>
+                    <button class="btn-export" data-export="wastedWords">📥 Eksportuj CSV</button>
+                </div>
+                <div class="table-wrap" id="table-wasted-words"></div>
+            </div>
+
+            <div class="tab-content" id="tab-bids">
+                <div class="rec-header">
+                    <div>
+                        <h3>💡 Sugerowane Bidy (Kampanie Manualne)</h3>
+                        <p class="rec-desc">Propozycje modyfikacji Twoich Manualnych Słów/ASINów by zbliżyć się do targetu ACoS.</p>
+                    </div>
+                    <button class="btn-export" data-export="bids">📥 Eksportuj CSV</button>
+                </div>
+                <div class="table-wrap" id="table-bids"></div>
+            </div>
+
+            <div class="tab-content" id="tab-auto-targets">
+                <div class="rec-header">
+                    <div>
+                        <h3>🤖 Optymalizacja Targetów AUTO (Dopasowania)</h3>
+                        <p class="rec-desc">Analiza i optymalizacja Twoich Kampanii Automatycznych (Close match, Loose match, Substitutes, Complements).</p>
+                    </div>
+                    <button class="btn-export" data-export="autoTargets">📥 Eksportuj CSV</button>
+                </div>
+                <div class="table-wrap" id="table-auto-targets"></div>
+            </div>
+
+            <div class="tab-content" id="tab-placements">
+                <div class="rec-header">
+                    <div>
+                        <h3>📍 Sugerowane Bid Adjustments (Placement Report)</h3>
+                        <p class="rec-desc">Propozycje modyfikacji modyfikatorów stawek w kampaniach na podstawie wydajności poszczególnych miejsc (Top of Search vs Reszta).</p>
+                    </div>
+                </div>
+                <div class="table-wrap" id="table-placements"></div>
+            </div>
+
+            <div class="tab-content" id="tab-winners">
+                <div class="rec-header">
+                    <div>
+                        <h3>🏆 Winning Terms — Najlepsi performerzy</h3>
+                        <p class="rec-desc">Termy z dobrym ACoS i solidną sprzedażą. Możesz poprawić ich bidy lub przenieść wyżej, rozwijaj je.</p>
+                    </div>
+                    <button class="btn-export" data-export="winners">📥 Eksportuj CSV</button>
+                </div>
+                <div class="table-wrap" id="table-winners"></div>
+            </div>
+
+            <div class="tab-content" id="tab-skag">
+                <div class="rec-header">
+                    <div>
+                        <h3>💎 Złote Perełki (SKAG) — Absolutny top pod osobną kampanię!</h3>
+                        <p class="rec-desc">Termy o wybitnej konwersji (np. 4+ zamówień) i super niskim ACoS. Przenieś je do własnych kampanii typu (Single Keyword Ad Group) aby wykręcić wolumen maksymalnie i zarządzać ich placementem.</p>
+                    </div>
+                    <button class="btn-export" data-export="skag">📥 Eksportuj CSV</button>
+                </div>
+                <div class="table-wrap" id="table-skag"></div>
+            </div>
+
+            <div class="tab-content" id="tab-harvest">
+                <div class="rec-header">
+                    <div>
+                        <h3>🔄 Keyword Harvesting — Z Auto do Manual (Słowa)</h3>
+                        <p class="rec-desc">Dobre słowa wyszukane z Auto. Przenieś do kampanii Manualnych jako Exact.</p>
+                    </div>
+                    <button class="btn-export" data-export="harvest">📥 Eksportuj CSV</button>
+                </div>
+                <div class="table-wrap" id="table-harvest"></div>
+            </div>
+
+            <div class="tab-content" id="tab-harvest-asins">
+                <div class="rec-header">
+                    <div>
+                        <h3>📥 Product Targeting (Winners) — ASINy do atakowania!</h3>
+                        <p class="rec-desc">Twoja kampania świetnie sprzedaje na stronach tych produktów. Stwórz oddzielną kampanię na targetowanie celowe tych ASINów ulepszonym bidem (Product Targeting).</p>
+                    </div>
+                    <button class="btn-export" data-export="harvestAsins">📥 Eksportuj CSV</button>
+                </div>
+                <div class="table-wrap" id="table-harvest-asins"></div>
+            </div>
+
+            <div class="tab-content" id="tab-high-acos">
+                <div class="rec-header">
+                    <div>
+                        <h3>📉 High ACoS — Zbyt drogie hasła</h3>
+                        <p class="rec-desc">Słowa z konwersją, ale ACoS przekracza próg (np. >30%). Zredukuj stawki CPC!</p>
+                    </div>
+                    <button class="btn-export" data-export="high-acos">📥 Eksportuj CSV</button>
+                </div>
+                <div class="table-wrap" id="table-high-acos"></div>
+            </div>
+
+            <div class="tab-content" id="tab-sqp">
+                <div class="rec-header">
+                    <div>
+                        <h3>📈 SQP Boost — Agresywny Wzrost z Brand Analytics</h3>
+                        <p class="rec-desc">Zestawienie rentownych słów PPC z małym udziałem organicznym (Brand Share). Oznacza to świetną szansę na skalowanie budżetu!</p>
+                    </div>
+                    <button class="btn-export" data-export="sqp">📥 Eksportuj CSV</button>
+                </div>
+                <div class="table-wrap" id="table-sqp"></div>
+            </div>
+        </section>
+
+    </div>
+
+    <script src="analysis.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
