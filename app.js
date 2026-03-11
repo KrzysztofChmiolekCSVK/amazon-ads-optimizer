@@ -17,6 +17,9 @@
     let chartInstances = {};
     let autoCampaigns = new Set();
     let globalSearchQuery = '';
+    let activeTabId = 'wasted';
+    const TABLE_PAGE_SIZE = 100;
+    const tablePageState = {};
 
     // ===== DOM REFS =====
     const screens = {
@@ -33,6 +36,20 @@
     const campaignFilter = document.getElementById('campaign-filter');
     const globalSearchInput = document.getElementById('global-search');
     const loadingStatus = document.getElementById('loading-status');
+    const TAB_TO_TABLE = {
+        'wasted': { containerId: 'table-wasted', type: 'wasted' },
+        'wasted-asins': { containerId: 'table-wasted-asins', type: 'wastedAsins' },
+        'wasted-words': { containerId: 'table-wasted-words', type: 'wastedWords' },
+        'bids': { containerId: 'table-bids', type: 'bids' },
+        'auto-targets': { containerId: 'table-auto-targets', type: 'autoTargets' },
+        'placements': { containerId: 'table-placements', type: 'placements' },
+        'winners': { containerId: 'table-winners', type: 'winners' },
+        'skag': { containerId: 'table-skag', type: 'skag' },
+        'harvest': { containerId: 'table-harvest', type: 'harvest' },
+        'harvest-asins': { containerId: 'table-harvest-asins', type: 'harvestAsins' },
+        'sqp': { containerId: 'table-sqp', type: 'sqp' },
+        'high-acos': { containerId: 'table-high-acos', type: 'high-acos' },
+    };
     let doneRowIds = new Set();
     try {
         const stored = localStorage.getItem('amazon_ads_optimizer_done_rows');
@@ -170,6 +187,7 @@
                     onDone();
                 },
                 skipEmptyLines: true,
+                worker: true,
             });
         } else if (ext === 'xlsx' || ext === 'xls') {
             const reader = new FileReader();
@@ -227,15 +245,15 @@
         const isHourly = colMap.startTime !== undefined || headers.some(h => String(h).toLowerCase().includes('start time'));
 
         if (colMap.sqpVolume !== undefined) {
-            parsedDataMap.sqp = parsedDataMap.sqp.concat(parsed);
+            parsedDataMap.sqp.push(...parsed);
         } else if (isHourly) {
-            parsedDataMap.hourly = parsedDataMap.hourly.concat(parsed);
+            parsedDataMap.hourly.push(...parsed);
         } else if (colMap.searchTerm !== undefined) {
-            parsedDataMap.searchTerms = parsedDataMap.searchTerms.concat(parsed);
+            parsedDataMap.searchTerms.push(...parsed);
         } else if (colMap.targeting !== undefined) {
-            parsedDataMap.targeting = parsedDataMap.targeting.concat(parsed);
+            parsedDataMap.targeting.push(...parsed);
         } else if (colMap.placement !== undefined) {
-            parsedDataMap.placements = parsedDataMap.placements.concat(parsed);
+            parsedDataMap.placements.push(...parsed);
         }
     }
 
@@ -338,6 +356,52 @@
         campaignFilter.closest('.setting-group').style.display = 'none';
     }
 
+    function getDataMap() {
+        return {
+            'wasted': analysisResults?.wastedSpend,
+            'wastedAsins': analysisResults?.wastedAsins,
+            'wastedWords': analysisResults?.wastedWords,
+            'bids': analysisResults?.bids,
+            'autoTargets': analysisResults?.autoTargets,
+            'placements': analysisResults?.placements,
+            'winners': analysisResults?.winners,
+            'skag': analysisResults?.skag,
+            'harvest': analysisResults?.harvest,
+            'harvestAsins': analysisResults?.harvestAsins,
+            'sqp': analysisResults?.sqpBoost,
+            'high-acos': analysisResults?.highAcos,
+        };
+    }
+
+    function resetPagination() {
+        Object.keys(tablePageState).forEach(key => delete tablePageState[key]);
+    }
+
+    function ensureVisibleActiveTab() {
+        const activeTab = document.querySelector(`.tab[data-tab="${activeTabId}"]`);
+        if (activeTab && activeTab.style.display !== 'none') return;
+
+        const firstVisible = document.querySelector('.tab:not([style*="display: none"])');
+        if (firstVisible) {
+            activeTabId = firstVisible.dataset.tab;
+        }
+    }
+
+    function renderActiveTabContent() {
+        if (!analysisResults) return;
+
+        const config = TAB_TO_TABLE[activeTabId];
+        if (config) {
+            const dataMap = getDataMap();
+            renderTable(config.containerId, dataMap[config.type], config.type);
+            return;
+        }
+
+        if (activeTabId === 'charts' || activeTabId === 'dayparting') {
+            renderCharts();
+        }
+    }
+
     function getFilteredData() {
         const ctry = countryFilter.value;
         const cmp = campaignFilter.value;
@@ -375,6 +439,7 @@
             minClicks: parseInt(document.getElementById('min-clicks').value) || 10,
             minOrders: parseInt(document.getElementById('min-orders').value) || 2,
         };
+        resetPagination();
 
         // Populate autoCampaigns Set based on targeting rows
         const autoTargets = ['close-match', 'loose-match', 'substitutes', 'complements'];
@@ -438,23 +503,6 @@
         const hasHourlyData = (r.hourly && r.hourly.some(h => h.spend > 0));
         setText('count-dayparting', hasHourlyData ? '24' : '0');
 
-        // Tables
-        renderTable('table-wasted', r.wastedSpend, 'wasted');
-        renderTable('table-wasted-asins', r.wastedAsins, 'wastedAsins');
-        renderTable('table-wasted-words', r.wastedWords, 'wastedWords');
-        renderTable('table-bids', r.bids || [], 'bids');
-        renderTable('table-auto-targets', r.autoTargets || [], 'autoTargets');
-        renderTable('table-placements', r.placements || [], 'placements');
-        renderTable('table-winners', r.winners, 'winners');
-        renderTable('table-skag', r.skag, 'skag');
-        renderTable('table-harvest', r.harvest, 'harvest');
-        renderTable('table-harvest-asins', r.harvestAsins, 'harvestAsins');
-        renderTable('table-sqp', r.sqpBoost, 'sqp');
-        renderTable('table-high-acos', r.highAcos, 'high-acos');
-
-        // Charts
-        renderCharts();
-
         // Show/hide relevant tabs based on filter
         const cmpVal = campaignFilter.value;
         const bidTab = document.querySelector('.tab[data-tab="bids"]');
@@ -473,12 +521,10 @@
             }
         }
 
-        // If the current active tab is now hidden, click the first visible tab
-        const activeTab = document.querySelector('.tab.active');
-        if (activeTab && activeTab.style.display === 'none') {
-            const firstVisible = document.querySelector('.tab:not([style*="display: none"])');
-            if (firstVisible) firstVisible.click();
-        }
+        ensureVisibleActiveTab();
+        document.querySelectorAll('.tab').forEach(t => t.classList.toggle('active', t.dataset.tab === activeTabId));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.toggle('active', c.id === 'tab-' + activeTabId));
+        renderActiveTabContent();
     }
 
     // ===== RENDER TABLE =====
@@ -570,6 +616,14 @@
             sortedData = sortData(filteredLocalData, sort.key, sort.dir);
         }
 
+        const totalRows = sortedData.length;
+        const totalPages = Math.max(1, Math.ceil(totalRows / TABLE_PAGE_SIZE));
+        const currentPage = Math.min(tablePageState[type] || 1, totalPages);
+        tablePageState[type] = currentPage;
+        const startIdx = (currentPage - 1) * TABLE_PAGE_SIZE;
+        const endIdx = Math.min(startIdx + TABLE_PAGE_SIZE, totalRows);
+        const pagedData = sortedData.slice(startIdx, endIdx);
+
         // Build header
         let html = '<table><thead><tr>';
         html += '<th class="th-nosort">#</th>';
@@ -595,7 +649,7 @@
         html += '<th class="th-nosort">Akcja</th>';
         html += '</tr></thead><tbody>';
 
-        sortedData.forEach((row, i) => {
+        pagedData.forEach((row, i) => {
             const priorityClass = row.priority === 'Wysoki' ? 'badge-danger' :
                                   row.priority === 'Średni' ? 'badge-warning' : 'badge-info';
 
@@ -607,7 +661,7 @@
             const doneClass = isDone ? 'row-done' : '';
 
             html += `<tr class="${doneClass}">`;
-            html += `<td>${i + 1}</td>`;
+            html += `<td>${startIdx + i + 1}</td>`;
             
             const btnCopyHTML = (text) => `<button class="btn-copy" data-copy-text="${escHTML(text)}" title="Kopiuj do schowka">📋</button>`;
 
@@ -661,6 +715,26 @@
         });
 
         html += '</tbody></table>';
+        if (totalPages > 1) {
+            let paginationHtml = '<div class="table-pagination" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-top:16px;">';
+            paginationHtml += `<div class="pagination-summary">Pokazuje ${startIdx + 1}-${endIdx} z ${totalRows}</div>`;
+            paginationHtml += '<div class="pagination-controls" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">';
+            paginationHtml += `<button class="btn-outline btn-page" data-table-type="${type}" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>Poprzednia</button>`;
+            let lastRenderedPage = 0;
+            for (let page = 1; page <= totalPages; page++) {
+                const shouldRender = page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
+                if (!shouldRender) continue;
+                if (page - lastRenderedPage > 1) {
+                    paginationHtml += '<span class="pagination-ellipsis">...</span>';
+                }
+                const activeStyle = page === currentPage ? ' style="font-weight:700;"' : '';
+                paginationHtml += `<button class="btn-outline btn-page" data-table-type="${type}" data-page="${page}"${activeStyle}>${page}</button>`;
+                lastRenderedPage = page;
+            }
+            paginationHtml += `<button class="btn-outline btn-page" data-table-type="${type}" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>Następna</button>`;
+            paginationHtml += '</div></div>';
+            html += paginationHtml;
+        }
         container.innerHTML = html;
 
         // Attach Done buttons logic
@@ -684,7 +758,7 @@
             btn.addEventListener('click', () => {
                 const tType = btn.dataset.tableType;
                 // We use the already filtered and sorted data used for rendering
-                const allVisibleIds = sortedData.map(row => {
+                const allVisibleIds = pagedData.map(row => {
                     const cSearch = (row.searchTerm || '').trim();
                     const cCamp = (row.campaign || '').trim();
                     const cAdG = (row.adGroup || '').trim();
@@ -703,20 +777,7 @@
 
                 saveDoneRows();
                 // Re-render only this table to show changes
-                const dataMap = {
-                    'wasted': analysisResults?.wastedSpend,
-                    'wastedAsins': analysisResults?.wastedAsins,
-                    'wastedWords': analysisResults?.wastedWords,
-                    'bids': analysisResults?.bids,
-                    'autoTargets': analysisResults?.autoTargets,
-                    'placements': analysisResults?.placements,
-                    'winners': analysisResults?.winners,
-                    'skag': analysisResults?.skag,
-                    'harvest': analysisResults?.harvest,
-                    'harvestAsins': analysisResults?.harvestAsins,
-                    'sqp': analysisResults?.sqpBoost,
-                    'high-acos': analysisResults?.highAcos,
-                };
+                const dataMap = getDataMap();
                 renderTable(containerId, dataMap[tType], tType);
             });
         });
@@ -738,22 +799,21 @@
                 } else {
                     tableSortState[tableType] = { key, dir: 'desc' };
                 }
+                tablePageState[tableType] = 1;
 
                 // Re-render this table
-                const dataMap = {
-                    'wasted': analysisResults?.wastedSpend,
-                    'wastedAsins': analysisResults?.wastedAsins,
-                    'wastedWords': analysisResults?.wastedWords,
-                    'bids': analysisResults?.bids,
-                    'autoTargets': analysisResults?.autoTargets,
-                    'placements': analysisResults?.placements,
-                    'winners': analysisResults?.winners,
-                    'skag': analysisResults?.skag,
-                    'harvest': analysisResults?.harvest,
-                    'harvestAsins': analysisResults?.harvestAsins,
-                    'sqp': analysisResults?.sqpBoost,
-                    'high-acos': analysisResults?.highAcos,
-                };
+                const dataMap = getDataMap();
+                renderTable(containerId, dataMap[tableType], tableType);
+            });
+        });
+
+        container.querySelectorAll('.btn-page').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const tableType = btn.dataset.tableType;
+                const nextPage = parseInt(btn.dataset.page, 10);
+                if (!Number.isFinite(nextPage) || nextPage < 1 || nextPage > totalPages) return;
+                tablePageState[tableType] = nextPage;
+                const dataMap = getDataMap();
                 renderTable(containerId, dataMap[tableType], tableType);
             });
         });
@@ -932,15 +992,12 @@
     // ===== TABS =====
     document.querySelectorAll('.tab').forEach(tab => {
         tab.addEventListener('click', () => {
+            activeTabId = tab.dataset.tab;
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
             tab.classList.add('active');
             document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
-            
-            // Resize charts if opening 'charts' tab so they don't squish
-            if (tab.dataset.tab === 'charts') {
-                Object.values(chartInstances).forEach(c => { if(c) c.resize(); });
-            }
+            renderActiveTabContent();
         });
     });
 
@@ -948,7 +1005,8 @@
         globalSearchInput.addEventListener('input', (e) => {
             globalSearchQuery = e.target.value.trim();
             if (analysisResults) {
-                renderDashboard();
+                resetPagination();
+                renderActiveTabContent();
             }
         });
     }
