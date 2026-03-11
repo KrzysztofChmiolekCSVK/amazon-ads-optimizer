@@ -758,6 +758,10 @@ body {
     border-radius: var(--radius-md);
     background: var(--bg-card);
 }
+
+.table-pagination-host {
+    margin-top: 14px;
+}
 table {
     width: 100%;
     border-collapse: collapse;

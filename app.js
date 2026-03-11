@@ -394,6 +394,8 @@
         if (config) {
             const dataMap = getDataMap();
             renderTable(config.containerId, dataMap[config.type], config.type);
+            paginationHost.innerHTML = '';
+            paginationHost.innerHTML = '';
             return;
         }
 
@@ -591,6 +593,13 @@
 
     function renderTable(containerId, data, type) {
         const container = document.getElementById(containerId);
+        let paginationHost = document.getElementById(containerId + '-pagination');
+        if (!paginationHost) {
+            paginationHost = document.createElement('div');
+            paginationHost.id = containerId + '-pagination';
+            paginationHost.className = 'table-pagination-host';
+            container.insertAdjacentElement('afterend', paginationHost);
+        }
         if (!data || data.length === 0) {
             container.innerHTML = `<div class="empty-state"><span>✅</span><p>Brak wyników w tej kategorii — dobra robota!</p></div>`;
             return;
@@ -627,7 +636,7 @@
         const buildPaginationControls = () => {
             if (totalPages <= 1) return '';
 
-            let paginationHtml = '<div class="table-pagination" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 16px 0;">';
+            let paginationHtml = '<div class="table-pagination" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap;">';
             paginationHtml += `<div class="pagination-summary">Pokazuje ${startIdx + 1}-${endIdx} z ${totalRows}</div>`;
             paginationHtml += '<div class="pagination-controls" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">';
             paginationHtml += `<button class="btn-outline btn-page" data-table-type="${type}" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>Poprzednia</button>`;
@@ -648,8 +657,7 @@
         };
 
         // Build header
-        let html = buildPaginationControls();
-        html += '<table><thead><tr>';
+        let html = '<table><thead><tr>';
         html += '<th class="th-nosort">#</th>';
 
         SORT_COLUMNS.forEach(col => {
@@ -739,10 +747,8 @@
         });
 
         html += '</tbody></table>';
-        if (totalPages > 1) {
-            html += buildPaginationControls().replace('margin:0 0 16px 0;', 'margin:16px 0 0 0;');
-        }
         container.innerHTML = html;
+        paginationHost.innerHTML = buildPaginationControls();
 
         // Attach Done buttons logic
         container.querySelectorAll('.btn-done').forEach(btn => {
@@ -814,7 +820,7 @@
             });
         });
 
-        container.querySelectorAll('.btn-page').forEach(btn => {
+        paginationHost.querySelectorAll('.btn-page').forEach(btn => {
             btn.addEventListener('click', () => {
                 const tableType = btn.dataset.tableType;
                 const nextPage = parseInt(btn.dataset.page, 10);
