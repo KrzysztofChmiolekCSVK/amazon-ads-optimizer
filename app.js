@@ -394,8 +394,6 @@
         if (config) {
             const dataMap = getDataMap();
             renderTable(config.containerId, dataMap[config.type], config.type);
-            paginationHost.innerHTML = '';
-            paginationHost.innerHTML = '';
             return;
         }
 
