@@ -624,8 +624,32 @@
         const endIdx = Math.min(startIdx + TABLE_PAGE_SIZE, totalRows);
         const pagedData = sortedData.slice(startIdx, endIdx);
 
+        const buildPaginationControls = () => {
+            if (totalPages <= 1) return '';
+
+            let paginationHtml = '<div class="table-pagination" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin:0 0 16px 0;">';
+            paginationHtml += `<div class="pagination-summary">Pokazuje ${startIdx + 1}-${endIdx} z ${totalRows}</div>`;
+            paginationHtml += '<div class="pagination-controls" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">';
+            paginationHtml += `<button class="btn-outline btn-page" data-table-type="${type}" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>Poprzednia</button>`;
+            let lastRenderedPage = 0;
+            for (let page = 1; page <= totalPages; page++) {
+                const shouldRender = page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
+                if (!shouldRender) continue;
+                if (page - lastRenderedPage > 1) {
+                    paginationHtml += '<span class="pagination-ellipsis">...</span>';
+                }
+                const activeStyle = page === currentPage ? ' style="font-weight:700;"' : '';
+                paginationHtml += `<button class="btn-outline btn-page" data-table-type="${type}" data-page="${page}"${activeStyle}>${page}</button>`;
+                lastRenderedPage = page;
+            }
+            paginationHtml += `<button class="btn-outline btn-page" data-table-type="${type}" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>Następna</button>`;
+            paginationHtml += '</div></div>';
+            return paginationHtml;
+        };
+
         // Build header
-        let html = '<table><thead><tr>';
+        let html = buildPaginationControls();
+        html += '<table><thead><tr>';
         html += '<th class="th-nosort">#</th>';
 
         SORT_COLUMNS.forEach(col => {
@@ -716,24 +740,7 @@
 
         html += '</tbody></table>';
         if (totalPages > 1) {
-            let paginationHtml = '<div class="table-pagination" style="display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; margin-top:16px;">';
-            paginationHtml += `<div class="pagination-summary">Pokazuje ${startIdx + 1}-${endIdx} z ${totalRows}</div>`;
-            paginationHtml += '<div class="pagination-controls" style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">';
-            paginationHtml += `<button class="btn-outline btn-page" data-table-type="${type}" data-page="${currentPage - 1}" ${currentPage === 1 ? 'disabled' : ''}>Poprzednia</button>`;
-            let lastRenderedPage = 0;
-            for (let page = 1; page <= totalPages; page++) {
-                const shouldRender = page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1;
-                if (!shouldRender) continue;
-                if (page - lastRenderedPage > 1) {
-                    paginationHtml += '<span class="pagination-ellipsis">...</span>';
-                }
-                const activeStyle = page === currentPage ? ' style="font-weight:700;"' : '';
-                paginationHtml += `<button class="btn-outline btn-page" data-table-type="${type}" data-page="${page}"${activeStyle}>${page}</button>`;
-                lastRenderedPage = page;
-            }
-            paginationHtml += `<button class="btn-outline btn-page" data-table-type="${type}" data-page="${currentPage + 1}" ${currentPage === totalPages ? 'disabled' : ''}>Następna</button>`;
-            paginationHtml += '</div></div>';
-            html += paginationHtml;
+            html += buildPaginationControls().replace('margin:0 0 16px 0;', 'margin:16px 0 0 0;');
         }
         container.innerHTML = html;
 
