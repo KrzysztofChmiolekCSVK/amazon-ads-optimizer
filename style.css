@@ -149,6 +149,26 @@ body {
     font-weight: 500;
     border: 1px solid var(--border);
 }
+.nav-tools-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 14px;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--accent-primary), transparent 45%);
+    background: color-mix(in srgb, var(--accent-primary), transparent 88%);
+    color: var(--accent-primary);
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+.nav-tools-link:hover {
+    background: color-mix(in srgb, var(--accent-primary), transparent 78%);
+    transform: translateY(-2px);
+}
 .theme-toggle {
     background: var(--bg-surface);
     border: 1px solid var(--border);
@@ -978,6 +998,15 @@ tr:hover td {
     .navbar, .settings-bar, .kpi-section, .charts-section, .recommendations-section {
         padding-left: 16px;
         padding-right: 16px;
+    }
+    .navbar {
+        flex-wrap: wrap;
+        gap: 12px;
+    }
+    .nav-actions {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
     }
     .rec-header {
         flex-direction: column;
